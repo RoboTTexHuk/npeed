@@ -10,17 +10,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'
-    show
-    MethodChannel,
-    SystemChrome,
-    SystemUiOverlayStyle,
-    DeviceOrientation;
+    show MethodChannel, SystemChrome, SystemUiOverlayStyle, DeviceOrientation, MethodCall;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as r;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
+import 'package:nspeed/pushnspeed.dart' show SpeedCaptainDeck;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -706,7 +703,7 @@ class _GridHarborState extends State<GridHarbor> with WidgetsBindingObserver {
     _igniteWarm();
     _armFcm();
     _boss.summon(() => setState(() {}));
-    _bindNotifPipe();
+    _bindCrowBell();
     _prepRig();
     Future.delayed(const Duration(milliseconds: 500), () async {
       try {
@@ -739,16 +736,17 @@ class _GridHarborState extends State<GridHarbor> with WidgetsBindingObserver {
       }
     });
   }
-
-  void _bindNotifPipe() {
-    MethodChannel('com.example.fcm/notification')
-        .setMethodCallHandler((call) async {
+  void _bindCrowBell() {
+    MethodChannel('com.example.fcm/notification').setMethodCallHandler((MethodCall call) async {
       if (call.method == "onNotificationTap") {
-        final Map<String, dynamic> payload =
-        Map<String, dynamic>.from(call.arguments);
-        final targetUrl = payload["uri"];
-        if (targetUrl != null && targetUrl is String && targetUrl.isNotEmpty) {
-          _hop(targetUrl);
+        final Map<String, dynamic> bottle = Map<String, dynamic>.from(call.arguments);
+        print("URI from mast: ${bottle['uri']}");
+        if (bottle["uri"] != null && !bottle["uri"].toString().contains("Нет URI")) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => SpeedCaptainDeck(bottle["uri"])),
+                (route) => false,
+          );
         }
       }
     });
@@ -1017,7 +1015,7 @@ class _GridHarborState extends State<GridHarbor> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    _bindNotifPipe();
+    _bindCrowBell();
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
